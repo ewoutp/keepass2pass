@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/base64"
+	"bytes"
 	"flag"
 	"fmt"
 	"os"
@@ -75,7 +75,7 @@ func exportEntry(kpFile *KeePassFile, entry Entry, groupPath string) error {
 		return err
 	}
 
-	if err := insertIntoPath(path, content); err != nil {
+	if err := insertIntoPath(path, []byte(content)); err != nil {
 		return err
 	}
 
@@ -90,7 +90,7 @@ func exportEntry(kpFile *KeePassFile, entry Entry, groupPath string) error {
 		}
 		attachmentPath := makeUniquePath(spath.Join(path, cleanPath(key)))
 		found[attachmentPath] = struct{}{}
-		if err := insertIntoPath(attachmentPath, base64.StdEncoding.EncodeToString(data)); err != nil {
+		if err := insertIntoPath(attachmentPath, data); err != nil {
 			return err
 		}
 	}
@@ -105,9 +105,9 @@ func cleanPath(path string) string {
 	return path
 }
 
-func insertIntoPath(path, content string) error {
+func insertIntoPath(path string, content []byte) error {
 	cmd := exec.Command("pass", "insert", "-m", path)
-	cmd.Stdin = strings.NewReader(content)
+	cmd.Stdin = bytes.NewBuffer(content)
 	if stdout, err := cmd.Output(); err != nil {
 		fmt.Printf("Failed to insert '%s': %v\n%s\n", path, err, string(stdout))
 		return err
